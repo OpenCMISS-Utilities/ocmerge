@@ -27,8 +27,9 @@ typedef std::vector<Elem> ELEMLIST;
 typedef enum { UNDEF_TYPE=-1, ELEMENTS_TYPE=0, NODES_TYPE=1 } FILETYPE;
 const char *stoppers[]={"Element","Node"};
 
-double precision=0.001;
+double precision=0.0000001;
 bool quiet=false;
+bool add_header=false;
 
 inline bool close_enough(double v1,double v2)
 {
@@ -199,7 +200,7 @@ void read_body_node(FILE *f,NODELIST& lst)
 				node.id=0;
 				continue;
 			}
-			if(fabs(v)<precision/10.0)
+			if(fabs(v)<precision)
 				v=fabs(v);
 			node.values.push_back(v);
 		}
@@ -222,7 +223,8 @@ bool process_nodes(const std::string& hdr,NODELIST& src, const std::string& outp
 		fprintf(stderr,"Error opening output file %s\n",output.c_str());
 		return false;
 	}
-	fprintf(fout,"%s\n",hdr.c_str());
+	if(add_header)
+		fprintf(fout,"%s\n",hdr.c_str());
 
 	for(isrc=src.begin();isrc!=src.end();++isrc)
 	{
@@ -311,7 +313,7 @@ void read_body_elems(FILE *f,ELEMLIST& list)
 				for(int i=0;i<strs.size();i++)
 				{
 					double v=strtod(strs[i].c_str(),NULL);
-					if(fabs(v)<precision/10.0)
+					if(fabs(v)<precision)
 						v=fabs(v);
 					elem.values.push_back(v);
 				}
@@ -369,7 +371,7 @@ void read_body_elems(FILE *f,ELEMLIST& list)
 				for(int i=0;i<strs.size();i++)
 				{
 					double v=strtod(strs[i].c_str(),NULL);
-					if(fabs(v)<precision/10.0)
+					if(fabs(v)<precision)
 						v=fabs(v);
 					elem.scale.push_back(v);
 				}
@@ -401,7 +403,8 @@ bool process_elems(const std::string& hdr,ELEMLIST& src,const std::string& outpu
 		fprintf(stderr,"Error opening output file %s\n",output.c_str());
 		return false;
 	}
-	fprintf(fout,"%s\n",hdr.c_str());
+	if(add_header)
+		fprintf(fout,"%s\n",hdr.c_str());
 	for(isrc=src.begin();isrc!=src.end();++isrc)
 	{
 		fprintf(fout," Element:        ");
@@ -462,7 +465,7 @@ bool load_file(const char *filename,std::string& hdr,NODELIST& nodes)
 
 void usage(const char *name)
 {
-	fprintf(stderr,"Usage: %s -e|-n <list_of_element_or_nodes_files> <-c list_of_files_to_compare to> [-p <precision value>] [-q (for quiet operations)]\n",name);
+	fprintf(stderr,"Usage: %s -e|-n <list_of_element_or_nodes_files> <-c list_of_files_to_compare to> [-r (to add header to the output)] [-q (for quiet operations)]\n",name);
 }
 
 int main(int argc, char *argv[])
@@ -502,6 +505,9 @@ int main(int argc, char *argv[])
 						break;
 				case 'o':
 						output=argv[++i];
+						break;
+				case 'r':
+						add_header=true;
 						break;
 				default:
 						pCurrentList=NULL;
