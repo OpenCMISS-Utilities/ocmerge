@@ -74,8 +74,8 @@ typedef enum { UNDEF_TYPE=-1, ELEMENTS_TYPE=0, NODES_TYPE=1 } FILETYPE;
 const char *stoppers[]={"Element","Node"};
 
 double precision=0.0000001; //Proximity precision
-bool quiet=false; //generate additional output for debugging
 bool add_header=false; //output headers
+char double_format[32]="%lf"; //format for outputting doubles
 
 
 //Returns true if two values are withing "precision" distance from each other
@@ -286,7 +286,11 @@ bool process_nodes(const std::string& hdr,NODELIST& src, const std::string& outp
 	{
 		fprintf(fout,"Node: %d\n",isrc->id);
 		for(int i=0;i<isrc->values.size();i++)
-			fprintf(fout,"    %lf\n",isrc->values[i]);
+		{
+			fprintf(fout,"    ");
+			fprintf(fout,double_format,isrc->values[i]);
+			fprintf(fout,"\n");
+		}
 	}
 	fclose(fout);
 	return true;
@@ -475,7 +479,10 @@ bool process_elems(const std::string& hdr,ELEMLIST& src,const std::string& outpu
 		{
 			fprintf(fout,"  ");
 			for(int j=0;j<skip;j++)
-				fprintf(fout," %lf",isrc->values[i+j]);
+			{
+				fprintf(fout," ");
+				fprintf(fout,double_format,isrc->values[i+j]);
+			}
 			fprintf(fout,"\n");
 		}
 		fprintf(fout,"\n");
@@ -486,7 +493,8 @@ bool process_elems(const std::string& hdr,ELEMLIST& src,const std::string& outpu
 		fprintf(fout," Scale factors:\n   ");
 		for(int i=0;i<isrc->scale.size();i+=skip)
 		{
-			fprintf(fout," %lf",isrc->scale[i]);
+			fprintf(fout," ");
+			fprintf(fout,double_format,isrc->scale[i]);
 		}
 		fprintf(fout,"\n");
 	}
@@ -523,7 +531,7 @@ bool load_file(const char *filename,std::string& hdr,NODELIST& nodes)
 
 void usage(const char *name)
 {
-	fprintf(stderr,"Usage: %s -e|-n <list_of_element_or_nodes_files> <-c list_of_files_to_compare to> [-r (to add header to the output)] [-q (for quiet operations)]\n",name);
+	fprintf(stderr,"Usage: %s -e|-n <list_of_element_or_nodes_files> <-c list_of_files_to_compare to> [-r (to add header to the output)] [-d <number of decimal places to output>]\n",name);
 }
 
 int main(int argc, char *argv[])
@@ -536,6 +544,7 @@ int main(int argc, char *argv[])
 	bool res=false;
 	std::string hdr;
 	std::string output;
+	int decimals=-1;
 
 	for(int i=1;i<argc;i++)
 	{
@@ -564,6 +573,9 @@ int main(int argc, char *argv[])
 				case 'o':
 						output=argv[++i];
 						break;
+				case 'd':
+						decimals=atoi(argv[++i]);
+						break;
 				case 'r':
 						add_header=true;
 						break;
@@ -577,6 +589,11 @@ int main(int argc, char *argv[])
 			pCurrentList->push_back(string(argv[i]));
 		}
 	}
+
+	if(decimals>0)
+		sprintf(double_format,"%%.%dlf",decimals);
+	else if(!decimals)
+		sprintf(double_format,"%%.0lf");
 
 	if(ftype==UNDEF_TYPE)
 	{
